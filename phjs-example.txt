@@ -1,0 +1,1 @@
+cmd -> phantomjs <phantomjs handler location> <url in double quotes> <html file for output location>

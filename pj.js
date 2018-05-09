@@ -24,6 +24,7 @@ function waitFor(testFx, onReady, timeOutMillis) {
 			if ((new Date().getTime() - start < maxtimeOutMillis) && !condition) {
 				// If not time-out yet and condition not yet fulfilled
 				condition = (typeof(testFx) === "string" ? eval(testFx) : testFx());
+				console.log(condition);
 			} else {
 				if (!condition) {
 					// If condition still not fulfilled (timeout but condition is 'false')
@@ -43,6 +44,7 @@ function waitFor(testFx, onReady, timeOutMillis) {
 var page = require('webpage').create(),
 	system = require('system'),
 	fs = require('fs'),
+	settings = {encoding: "utf8"},
 	address, output, page;
 
 if (system.args.length != 3) {
@@ -55,33 +57,34 @@ if (system.args.length != 3) {
 	outputFile = system.args[2];
 
 	// Open the address of the given webpage and, onPageLoad, do...
-	page.open(address, function(status) {
+	page.open(address, settings, function(status) {
 
 		// Check for page load success
 		if (status !== "success") {
 			console.log("Unable to access network");
 		} else {
-			// Wait for 'gsc-resultsbox-visible' to be visible
-			waitFor(function() {
-				// Check in the page if a specific element is now visible
-				console.log(1);
-				return page.evaluate(function() {
-					return $(".train-table").is(":visible");
-				});
-			}, function() {
-				console.log(2);
-				console.log("The search results list should be visible now." +
-					" Downloading the web page for you..");
-				try {
-					var found = $(".train-table", page.content);
-					console.log(found);
-					fs.write(outputFile, found, 'w')
-				} catch (e) {
-					console.log("Error while writing to the file. " + e.message)
+			page.includeJs('http://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js', function() {
+				if (page.injectJs('../../index.js')) {
+					// Wait for 'gsc-resultsbox-visible' to be visible
+					waitFor(function() {
+						// Check in the page if a specific element is now visible
+						return page.evaluate(function() {
+							return $(".train-table").is(":visible");
+						});
+					}, function() {
+						console.log("The search results list should be visible now." +
+							" Downloading the web page for you..");
+						try {
+							fs.write(outputFile, page.content, 'w')
+						} catch (e) {
+							console.log("Error while writing to the file. " + e.message)
+						}
+						console.log("The web page has been downloaded at: " + outputFile)
+						phantom.exit();
+					});
+				}else{
+					console.log('no index.js');
 				}
-				console.log(3);
-				console.log("The web page has been downloaded at: " + outputFile)
-				phantom.exit();
 			});
 		}
 	});
